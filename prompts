@@ -1,0 +1,124 @@
+# AI Prompt Log
+
+This document records the exact prompt workflow used with Antigravity IDE to build the **Store Order & Inventory Mini-System** for the Mallow Technologies Laravel Developer Take-Home Assignment.
+
+---
+
+## 1. Initial Prompt: Requirement Analysis & Implementation Plan Request
+
+```text
+Hi, I have a Laravel assignment to build a "Store Order & Inventory Mini-System". 
+
+Here are the requirements from the brief:
+- Retail counter POS application to record customer orders against a product catalog and keep stock in sync.
+- Data Scope:
+  • Products: name, unique code, price per unit, tax percentage, stock on hand.
+  • Customers: name, email (unique).
+  • Orders: one customer, one or more product lines (product + quantity), computed subtotal, tax and grand total.
+  • Database seeders with sample products and customers.
+- Functional Requirements:
+  1. Normalized database schema and migrations.
+  2. API to create orders: validates stock, calculates totals including tax, deducts stock, and returns order.
+  3. API to fetch customer's order history by email.
+  4. API returning products below a configurable low-stock threshold.
+  5. Queued job on order creation that simulates sending order-confirmation email (logs to storage/logs/laravel.log, no SMTP needed).
+  6. Feature tests covering order creation and insufficient stock edge case.
+  7. Concurrency safety: stock check-and-deduct must be safe under concurrent requests (prevent overselling).
+- Suggested UI: Single-screen POS billing interface with customer lookup, products table, low stock alert, cash tender denomination breakdown, and bill generation.
+
+Can you analyze these requirements and give me a comprehensive, step-by-step implementation plan?
+```
+
+---
+
+## 2. Plan Review & Modification Prompt: Updating the Plan
+
+```text
+I have reviewed the proposed implementation plan. Let's refine and update the plan with the following design decisions before starting development:
+
+1. Clean Architecture:
+   - Keep controllers thin. Put all order creation and inventory logic in a dedicated `app/Services/OrderService.php`.
+   - Use FormRequest (`StoreOrderRequest`) for strict request validation.
+
+2. Concurrency & Data Integrity:
+   - Wrap order creation inside `DB::transaction()`.
+   - Use pessimistic row locking with `lockForUpdate()` when checking and deducting product stock to prevent race conditions and overselling.
+   - Freeze unit price and tax percentage in `order_items` at the moment of purchase to preserve historical accuracy.
+   - Use soft deletes for products and customers.
+
+3. Background Processing:
+   - Dispatch `SendOrderConfirmationJob` using `afterCommit()` so the job only runs if the transaction succeeds.
+   - Queue driver set to `database` with simulated email logging.
+
+4. Interactive POS Interface:
+   - Build a full-screen POS terminal at `/` using Tailwind CSS and Alpine.js.
+   - Left side: searchable product catalog tiles with stock badges.
+   - Right side: customer lookup (trigger search on 2 letters), itemized ticket, live totals, cash tender (auto-syncs to current total and editable), change return with denomination breakdown, and thermal receipt print modal.
+
+5. Testing:
+   - Use PHPUnit feature tests (`tests/Feature/OrderTest.php`) with `RefreshDatabase`.
+
+Please update the implementation plan to reflect these specifications and prepare to execute it step by step.
+```
+
+---
+
+## 3. Execution & Implementation Prompts: Working on the Plan
+
+### Step 1: Database Schema, Models & Seeders
+```text
+Execute Stage 1 of the updated plan:
+1. Create migrations and models for customers, products, orders, and order_items with required fields, relationships, and soft deletes.
+2. Create ProductSeeder (Rice Bag, Cooking Oil, Sugar) and CustomerSeeder (Arun Kumar, Ravi Kumar, Priya Devi).
+```
+
+### Step 2: OrderService & Concurrency Safety
+```text
+Execute Stage 2 of the updated plan:
+Create `app/Services/OrderService.php`:
+- Wrap order creation in `DB::transaction()`.
+- Use `Customer::firstOrCreate()`.
+- Lock products with `lockForUpdate()`, validate stock, calculate subtotal, tax amount, and grand total.
+- Decrement stock atomically.
+- Save order and order items with price snapshots.
+- Dispatch `SendOrderConfirmationJob::dispatch($order)->afterCommit()`.
+```
+
+### Step 3: REST API Controllers & Routes
+```text
+Execute Stage 3 of the updated plan:
+1. Create `StoreOrderRequest` with array validation rules.
+2. In `OrderController`, implement:
+   - `POST /api/orders` (calls OrderService)
+   - `GET /api/customer/orders` (customer order history by email)
+   - `GET /api/products/low-stock` (configurable threshold)
+   - `GET /api/products` (catalog list)
+   - `GET /api/customers/search` (search customers with query >= 2 characters)
+```
+
+### Step 4: Queued Confirmation Job
+```text
+Execute Stage 4 of the updated plan:
+Create `app/Jobs/SendOrderConfirmationJob.php` implementing `ShouldQueue`:
+- Log simulated confirmation email to `storage/logs/laravel.log` with customer name, email, order ID, and grand total.
+```
+
+### Step 5: Feature Tests
+```text
+Execute Stage 5 of the updated plan:
+Write PHPUnit feature tests in `tests/Feature/OrderTest.php`:
+- Test successful order placement, total calculation, and stock decrement.
+- Test order failure (422) and stock rollback on insufficient stock.
+```
+
+### Step 6: POS Billing Screen
+```text
+Execute Stage 6 of the updated plan:
+Build the single-page POS billing screen in `resources/views/billing.blade.php`:
+- Product catalog touch tiles with search and filter tabs.
+- Customer autocomplete search (triggers on 2+ letters).
+- Register ticket with quantity adjustments and line totals.
+- Cash tender input that auto-syncs to the current total and remains editable.
+- Balance change calculation with currency denomination breakdown.
+- Charge & Generate Bill action with on-page printable thermal receipt.
+```

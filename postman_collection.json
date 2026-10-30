@@ -1,0 +1,247 @@
+{
+	"info": {
+		"_postman_id": "8f5a2b3c-9d4e-4f1a-b2c3-d4e5f6a7b8c9",
+		"name": "Store Order & Inventory System API",
+		"description": "Postman Collection for Mallow Technologies Laravel Developer Take-Home Assignment: Store Order & Inventory Mini-System.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "1. Create Order (Success)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customer_name\": \"Arun Kumar\",\n    \"customer_email\": \"arun@example.com\",\n    \"items\": [\n        {\n            \"product_id\": 1,\n            \"quantity\": 2\n        },\n        {\n            \"product_id\": 2,\n            \"quantity\": 1\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/orders",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"orders"
+							]
+						},
+						"description": "Places an order for multiple products with automatic stock deduction, price freezing, tax calculation, and async confirmation email dispatch."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Create Order (Edge Case: Insufficient Stock - 422)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customer_name\": \"Arun Kumar\",\n    \"customer_email\": \"arun@example.com\",\n    \"items\": [\n        {\n            \"product_id\": 1,\n            \"quantity\": 99999\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/orders",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"orders"
+							]
+						},
+						"description": "Tests edge case where requested quantity exceeds available stock. Returns 422 with stock rollback."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Customers",
+			"item": [
+				{
+					"name": "1. Customer Order History by Email",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customer/orders?email=arun@example.com",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"customer",
+								"orders"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "arun@example.com"
+								}
+							]
+						},
+						"description": "Fetches complete order history for a customer including ordered items and product relations."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Search Customers (Autocomplete 2+ Chars)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/search?q=ar",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"customers",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "ar"
+								}
+							]
+						},
+						"description": "Searches customers by name or email with query >= 2 characters for POS typeahead autocomplete."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Products & Inventory",
+			"item": [
+				{
+					"name": "1. Low Stock Products (Default Threshold = 10)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/products/low-stock",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"low-stock"
+							]
+						},
+						"description": "Returns products where stock is strictly below the default threshold (10 units)."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Low Stock Products (Custom Threshold = 30)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/products/low-stock?threshold=30",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"low-stock"
+							],
+							"query": [
+								{
+									"key": "threshold",
+									"value": "30"
+								}
+							]
+						},
+						"description": "Returns products where stock is below a configurable threshold (e.g. 30 units)."
+					},
+					"response": []
+				},
+				{
+					"name": "3. List All Products (POS Catalog)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/products",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products"
+							]
+						},
+						"description": "Returns active product catalog with unit prices, tax percentages, and available stock."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000",
+			"type": "string"
+		}
+	]
+}

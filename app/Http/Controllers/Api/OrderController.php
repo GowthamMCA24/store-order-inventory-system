@@ -61,4 +61,33 @@ class OrderController extends Controller
             'data' => $products,
         ]);
     }
+
+    public function products(): JsonResponse
+    {
+        $products = Product::orderBy('name')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $products,
+        ]);
+    }
+
+    public function customerSearch(Request $request): JsonResponse
+    {
+        $query = trim($request->query('q', ''));
+
+        if (strlen($query) < 2) {
+            return response()->json(['success' => true, 'data' => []]);
+        }
+
+        $customers = Customer::where('email', 'like', "%{$query}%")
+            ->orWhere('name', 'like', "%{$query}%")
+            ->limit(5)
+            ->get(['id', 'name', 'email']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $customers,
+        ]);
+    }
 }
